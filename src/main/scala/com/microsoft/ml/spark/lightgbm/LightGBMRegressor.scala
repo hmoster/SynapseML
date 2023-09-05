@@ -119,6 +119,11 @@ class LightGBMRegressionModel(override val uid: String)
     val session = SparkSession.builder().getOrCreate()
     getModel.saveNativeModel(session, filename, overwrite)
   }
+
+  def saveModelToJson(filename: String, overwrite: Boolean): Unit = {
+    val session = SparkSession.builder().getOrCreate()
+    getModel.saveNativeJsonModel(session, filename, overwrite)
+  }
 }
 
 object LightGBMRegressionModel extends ComplexParamsReadable[LightGBMRegressionModel] {

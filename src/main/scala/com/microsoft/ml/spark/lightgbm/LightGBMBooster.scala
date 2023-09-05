@@ -114,6 +114,14 @@ protected class BoosterHandler(model: String) {
     }
   }
 
+  val evalOutPtr: ThreadLocal[DoubleNativePtrHandler] = {
+    new ThreadLocal[DoubleNativePtrHandler] {
+      override def initialValue(): DoubleNativePtrHandler = {
+        new DoubleNativePtrHandler(lightgbmlib.new_doubleArray(10))
+      }
+    }
+  }
+
   lazy val numClasses: Int = getNumClasses
   lazy val numFeatures: Int = getNumFeatures
   lazy val numTotalModel: Int = getNumTotalModel
@@ -251,7 +259,7 @@ class LightGBMBooster(val model: String) extends Serializable {
         sparseVector.indices, sparseVector.values,
         sparseVector.numNonzeros,
         boosterHandler.boosterPtr, dataInt32bitType, data64bitType, 2, numCols,
-        kind, -1, datasetParams,
+        kind, 0, this.numIterations, datasetParams,
         dataLengthLongPtr, dataOutPtr), "Booster Predict")
   }
 
@@ -270,7 +278,7 @@ class LightGBMBooster(val model: String) extends Serializable {
         row, boosterHandler.boosterPtr, data64bitType,
         numCols,
         isRowMajor, kind,
-        -1, datasetParams, dataLengthLongPtr, dataOutPtr),
+        0, this.numIterations, datasetParams, dataLengthLongPtr, dataOutPtr),
       "Booster Predict")
   }
 
@@ -285,14 +293,23 @@ class LightGBMBooster(val model: String) extends Serializable {
     dataset.coalesce(1).write.mode(mode).text(filename)
   }
 
-  def dumpModel(session: SparkSession, filename: String, overwrite: Boolean): Unit = {
-    val json = lightgbmlib.LGBM_BoosterDumpModelSWIG(boosterHandler.boosterPtr, 0, 0, 1,
+  def saveNativeJsonModel(session: SparkSession, filename: String, overwrite: Boolean): Unit = {
+    val json = lightgbmlib.LGBM_BoosterDumpModelSWIG(boosterHandler.boosterPtr, 0, -1, 0, 1,
       boosterHandler.dumpModelOutPtr.get().ptr)
     val rdd = session.sparkContext.parallelize(Seq(json))
     import session.sqlContext.implicits._
     val dataset = session.sqlContext.createDataset(rdd)
     val mode = if (overwrite) SaveMode.Overwrite else SaveMode.ErrorIfExists
     dataset.coalesce(1).write.mode(mode).text(filename)
+  }
+
+  def getModelToJson(session: SparkSession): String = {
+    val json = lightgbmlib.LGBM_BoosterDumpModelSWIG(boosterHandler.boosterPtr, 0, -1, 0, 1,
+      boosterHandler.dumpModelOutPtr.get().ptr)
+    val rdd = session.sparkContext.parallelize(Seq(json))
+    import session.sqlContext.implicits._
+    val dataset = session.sqlContext.createDataset(rdd)
+    dataset.coalesce(1).toDF.map(row => row.mkString).collect.flatten.mkString("")
   }
 
   /**

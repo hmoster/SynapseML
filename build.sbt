@@ -9,9 +9,9 @@ import scala.sys.process.Process
 val condaEnvName = "mmlspark"
 name := "mmlspark"
 organization := "com.microsoft.ml.spark"
-scalaVersion := "2.11.12"
+scalaVersion := "2.11.8"
 
-val sparkVersion = "2.4.5"
+val sparkVersion = "2.4.3"
 
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "compile",
@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "com.jcraft" % "jsch" % "0.1.54",
   "com.microsoft.cognitiveservices.speech" % "client-sdk" % "1.11.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.6",
-  "com.microsoft.ml.lightgbm" % "lightgbmlib" % "2.3.180",
+  "com.microsoft.ml.lightgbm" % "lightgbmlib" % "3.2.110",
   "com.github.vowpalwabbit" % "vw-jni" % "8.8.1",
   "com.linkedin.isolation-forest" %% "isolation-forest_2.4.3" % "0.3.2",
   "org.apache.spark" %% "spark-avro" % sparkVersion
@@ -333,10 +333,23 @@ val settings = Seq(
   buildInfoPackage := "com.microsoft.ml.spark.build") ++
   inConfig(IntegrationTest2)(Defaults.testSettings)
 
+lazy val commonSettings = Seq(
+  name := "assembly_demo",
+  version := "1.0",
+  scalaVersion := "2.11.8",
+)
+
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
+
 lazy val mmlspark = (project in file("."))
   .configs(IntegrationTest2)
   .enablePlugins(BuildInfoPlugin)
   .enablePlugins(ScalaUnidocPlugin)
+  .enablePlugins(AssemblyPlugin)
+  .settings(commonSettings: _*)
   .settings(settings: _*)
 
 import xerial.sbt.Sonatype._
