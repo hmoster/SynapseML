@@ -36,6 +36,13 @@ class LightGBMClassifier(override val uid: String)
   def getIsUnbalance: Boolean = $(isUnbalance)
   def setIsUnbalance(value: Boolean): this.type = set(isUnbalance, value)
 
+  val scalePosWeight = new DoubleParam(this, "scale_pos_weight",
+    "Set a double value if training data is unbalanced in binary classification scenario")
+  setDefault(scalePosWeight -> 1.0)
+
+  def getScalePosWeight: Double = $(scalePosWeight)
+  def setScalePosWeight(value: Double): this.type = set(scalePosWeight, value)
+
   def getTrainParams(numTasks: Int, categoricalIndexes: Array[Int], dataset: Dataset[_]): TrainParams = {
     /* The native code for getting numClasses is always 1 unless it is multiclass-classification problem
      * so we infer the actual numClasses from the dataset here
@@ -46,7 +53,7 @@ class LightGBMClassifier(override val uid: String)
       getBinSampleCount, getBaggingFraction, getPosBaggingFraction, getNegBaggingFraction,
       getBaggingFreq, getBaggingSeed, getEarlyStoppingRound, getImprovementTolerance,
       getFeatureFraction, getMaxDepth, getMinSumHessianInLeaf, numTasks, getObjective, modelStr,
-      getIsUnbalance, getVerbosity, categoricalIndexes, actualNumClasses, getBoostFromAverage,
+      getIsUnbalance, getScalePosWeight, getVerbosity, categoricalIndexes, actualNumClasses, getBoostFromAverage,
       getBoostingType, getLambdaL1, getLambdaL2, getIsProvideTrainingMetric,
       getMetric, getMinGainToSplit, getMaxDeltaStep, getMaxBinByFeature, getMinDataInLeaf, getSlotNames, getDelegate)
   }

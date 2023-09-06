@@ -66,8 +66,8 @@ case class ClassifierTrainParams(parallelism: String, topK: Int, numIterations: 
                                  improvementTolerance: Double, featureFraction: Double,
                                  maxDepth: Int, minSumHessianInLeaf: Double,
                                  numMachines: Int, objective: String, modelString: Option[String],
-                                 isUnbalance: Boolean, verbosity: Int, categoricalFeatures: Array[Int],
-                                 numClass: Int, boostFromAverage: Boolean,
+                                 isUnbalance: Boolean, scalePosWeight: Double, verbosity: Int,
+                                 categoricalFeatures: Array[Int], numClass: Int, boostFromAverage: Boolean,
                                  boostingType: String, lambdaL1: Double, lambdaL2: Double,
                                  isProvideTrainingMetric: Boolean, metric: String, minGainToSplit: Double,
                                  maxDeltaStep: Double, maxBinByFeature: Array[Int], minDataInLeaf: Int,
@@ -76,7 +76,10 @@ case class ClassifierTrainParams(parallelism: String, topK: Int, numIterations: 
   override def toString(): String = {
     val extraStr =
       if (objective != LightGBMConstants.BinaryObjective) s"num_class=$numClass"
-      else s"is_unbalance=${isUnbalance.toString}"
+      else {
+        if (isUnbalance) s"is_unbalance=${isUnbalance.toString}"
+        else s"scale_pos_weight=${scalePosWeight.toString}"
+      }
     s"metric=$metric boost_from_average=${boostFromAverage.toString} ${super.toString()} $extraStr"
   }
 }
