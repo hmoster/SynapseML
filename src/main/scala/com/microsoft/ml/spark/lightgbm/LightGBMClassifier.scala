@@ -191,6 +191,13 @@ class LightGBMClassificationModel(override val uid: String)
     getModel.getModelToJson(session)
   }
 
+  def getTrainEvalMetric(): Array[Double] = {
+    getModel.getTrainEvalMetric()
+  }
+
+  def getValidEvalMetric(): Array[Double] = {
+    getModel.getValidEvalMetric()
+  }
 }
 
 object LightGBMClassificationModel extends ComplexParamsReadable[LightGBMClassificationModel] {

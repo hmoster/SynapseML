@@ -193,6 +193,8 @@ protected class BoosterHandler(model: String) {
   */
 @SerialVersionUID(777L)
 class LightGBMBooster(val model: String) extends Serializable {
+  var trainEvalMetric: Array[Double] = Array.empty
+  var validEvalMetric: Array[Double] = Array.empty
   /** Transient variable containing local machine's pointer to native booster
     */
   @transient
@@ -310,6 +312,19 @@ class LightGBMBooster(val model: String) extends Serializable {
     import session.sqlContext.implicits._
     val dataset = session.sqlContext.createDataset(rdd)
     dataset.coalesce(1).toDF.map(row => row.mkString).collect.flatten.mkString("")
+  }
+
+  def saveEvalMetric(value: Array[Array[Double]]): Unit = {
+    trainEvalMetric = value(0)
+    validEvalMetric = value(1)
+  }
+
+  def getTrainEvalMetric(): Array[Double] = {
+    trainEvalMetric
+  }
+
+  def getValidEvalMetric(): Array[Double] = {
+    validEvalMetric
   }
 
   /**

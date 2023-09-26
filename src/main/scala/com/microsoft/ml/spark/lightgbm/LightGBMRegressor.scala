@@ -124,6 +124,19 @@ class LightGBMRegressionModel(override val uid: String)
     val session = SparkSession.builder().getOrCreate()
     getModel.saveNativeJsonModel(session, filename, overwrite)
   }
+
+  def getNativeJsonModel(): String = {
+    val session = SparkSession.builder().getOrCreate()
+    getModel.getModelToJson(session)
+  }
+
+  def getTrainEvalMetric(): Array[Double] = {
+    getModel.getTrainEvalMetric()
+  }
+
+  def getValidEvalMetric(): Array[Double] = {
+    getModel.getValidEvalMetric()
+  }
 }
 
 object LightGBMRegressionModel extends ComplexParamsReadable[LightGBMRegressionModel] {

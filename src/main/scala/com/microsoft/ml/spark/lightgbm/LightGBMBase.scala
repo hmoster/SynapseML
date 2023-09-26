@@ -206,7 +206,7 @@ trait LightGBMBase[TrainedModel <: Model[TrainedModel]] extends Estimator[Traine
     /* Run a parallel job via map partitions to initialize the native library and network,
      * translate the data to the LightGBM in-memory representation and train the models
      */
-    val encoder = Encoders.kryo[LightGBMBooster]
+    val encoder = Encoders.kryo[(LightGBMBooster, Array[Array[Double]])]
 
     val trainParams = getTrainParams(numTasks, getCategoricalIndexes(df), dataset)
     log.info(s"LightGBM parameters: ${trainParams.toString()}")
@@ -231,7 +231,8 @@ trait LightGBMBase[TrainedModel <: Model[TrainedModel]] extends Estimator[Traine
       }
     // Wait for future to complete (should be done by now)
     Await.result(future, Duration(getTimeout, SECONDS))
-    getModel(trainParams, lightGBMBooster)
+    lightGBMBooster._1.saveEvalMetric(lightGBMBooster._2)
+    getModel(trainParams, lightGBMBooster._1)
   }
 
   /** Optional group column for Ranking, set to None by default.

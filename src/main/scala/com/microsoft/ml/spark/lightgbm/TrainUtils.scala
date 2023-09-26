@@ -218,7 +218,7 @@ private object TrainUtils extends Serializable {
   }
 
   def trainCore(batchIndex: Int, trainParams: TrainParams, boosterPtr: Option[SWIGTYPE_p_void],
-                log: Logger, hasValid: Boolean): Unit = {
+                log: Logger, hasValid: Boolean, metrics: Array[Array[Double]]): Unit = {
     val isFinishedPtr = lightgbmlib.new_intp()
     var isFinished = false
     var iters = 0
@@ -265,6 +265,7 @@ private object TrainUtils extends Serializable {
         val results: Array[(String, Double)] = evalNames.zipWithIndex.map { case (evalName, index) =>
           val score = lightgbmlib.doubleArray_getitem(trainResults, index.toLong)
           log.info(s"Train $evalName=$score")
+          metrics(0)(iters) = score
           (evalName, score)
         }
 
@@ -282,6 +283,7 @@ private object TrainUtils extends Serializable {
         val results: Array[(String, Double)] = evalNames.zipWithIndex.map { case (evalName, index) =>
           val score = lightgbmlib.doubleArray_getitem(evalResults, index.toLong)
           log.info(s"Valid $evalName=$score")
+          metrics(1)(iters) = score
           val cmp =
             if (evalName.startsWith("auc") || evalName.startsWith("ndcg@") || evalName.startsWith("map@"))
               (x: Double, y: Double, tol: Double) => x - y > tol
@@ -292,7 +294,8 @@ private object TrainUtils extends Serializable {
             bestIter(index) = iters
             bestScores(index) = evalNames.indices
               .map(j => lightgbmlib.doubleArray_getitem(evalResults, j.toLong)).toArray
-          } else if (iters - bestIter(index) >= trainParams.earlyStoppingRound) {
+          } else if (trainParams.earlyStoppingRound != 0
+            && (iters - bestIter(index) >= trainParams.earlyStoppingRound)) {
             isFinished = true
             log.info("Early stopping, best iteration is " + bestIter(index))
           }
@@ -368,7 +371,7 @@ private object TrainUtils extends Serializable {
 
   def translate(batchIndex: Int, columnParams: ColumnParams, validationData: Option[Broadcast[Array[Row]]],
                 log: Logger, trainParams: TrainParams, returnBooster: Boolean, schema: StructType,
-                inputRows: Iterator[Row]): Iterator[LightGBMBooster] = {
+                inputRows: Iterator[Row]): Iterator[(LightGBMBooster, Array[Array[Double]])] = {
     val rows = inputRows.toArray
     var trainDatasetPtr: Option[LightGBMDataset] = None
     var validDatasetPtr: Option[LightGBMDataset] = None
@@ -384,13 +387,14 @@ private object TrainUtils extends Serializable {
         afterGenerateValidDataset(batchIndex, columnParams, schema, log, trainParams)
       }
 
+      val metrics = Array.ofDim[Double](2, trainParams.numIterations)
       var boosterPtr: Option[SWIGTYPE_p_void] = None
       try {
         boosterPtr = createBooster(trainParams, trainDatasetPtr, validDatasetPtr)
-        trainCore(batchIndex, trainParams, boosterPtr, log, validDatasetPtr.isDefined)
+        trainCore(batchIndex, trainParams, boosterPtr, log, validDatasetPtr.isDefined, metrics)
         if (returnBooster) {
           val model = saveBoosterToString(boosterPtr, log)
-          Iterator.single(new LightGBMBooster(model))
+          Iterator.single((new LightGBMBooster(model), metrics))
         } else {
           Iterator.empty
         }
@@ -535,7 +539,7 @@ private object TrainUtils extends Serializable {
   def trainLightGBM(batchIndex: Int, networkParams: NetworkParams, columnParams: ColumnParams,
                     validationData: Option[Broadcast[Array[Row]]], log: Logger,
                     trainParams: TrainParams, numTasksPerExec: Int, schema: StructType)
-                   (inputRows: Iterator[Row]): Iterator[LightGBMBooster] = {
+                   (inputRows: Iterator[Row]): Iterator[(LightGBMBooster, Array[Array[Double]])] = {
     val emptyPartition = !inputRows.hasNext
     // Ideally we would start the socket connections in the C layer, this opens us up for
     // race conditions in case other applications open sockets on cluster, but usually this
@@ -551,7 +555,7 @@ private object TrainUtils extends Serializable {
 
     if (emptyPartition) {
       log.warn("LightGBM task encountered empty partition, for best performance ensure no partitions empty")
-      List[LightGBMBooster]().toIterator
+      List[(LightGBMBooster, Array[Array[Double]])]().toIterator
     } else {
       // Initialize the network communication
       log.info(s"LightGBM task listening on: $localListenPort")
