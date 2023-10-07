@@ -8,6 +8,8 @@ import com.microsoft.ml.spark.lightgbm.LightGBMUtils.getBoosterPtrFromModelStrin
 import org.apache.spark.ml.linalg.{DenseVector, SparseVector, Vector}
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
+import scala.collection.mutable.ArrayBuffer
+
 //scalastyle:off
 protected abstract class NativePtrHandler[T](val ptr: T) {
   protected def freeNativePtr(): Unit
@@ -314,9 +316,9 @@ class LightGBMBooster(val model: String) extends Serializable {
     dataset.coalesce(1).toDF.map(row => row.mkString).collect.flatten.mkString("")
   }
 
-  def saveEvalMetric(value: Array[Array[Double]]): Unit = {
-    trainEvalMetric = value(0)
-    validEvalMetric = value(1)
+  def saveEvalMetric(value: Array[ArrayBuffer[Double]]): Unit = {
+    trainEvalMetric = value(0).toArray
+    validEvalMetric = value(1).toArray
   }
 
   def getTrainEvalMetric(): Array[Double] = {

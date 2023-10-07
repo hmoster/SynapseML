@@ -43,17 +43,25 @@ class LightGBMClassifier(override val uid: String)
   def getScalePosWeight: Double = $(scalePosWeight)
   def setScalePosWeight(value: Double): this.type = set(scalePosWeight, value)
 
+  val numClass = new IntParam(this, "num_class",
+    "Set a int value if num_class > 2")
+  setDefault(numClass -> 2)
+
+  def getNumClasses: Int = $(numClass)
+
+  def setNumClasses(value: Int): this.type = set(numClass, value)
+
   def getTrainParams(numTasks: Int, categoricalIndexes: Array[Int], dataset: Dataset[_]): TrainParams = {
     /* The native code for getting numClasses is always 1 unless it is multiclass-classification problem
      * so we infer the actual numClasses from the dataset here
      */
-    val actualNumClasses = getNumClasses(dataset)
+    //val actualNumClasses = getNumClasses(dataset)
     val modelStr = if (getModelString == null || getModelString.isEmpty) None else get(modelString)
     ClassifierTrainParams(getParallelism, getTopK, getNumIterations, getLearningRate, getNumLeaves, getMaxBin,
       getBinSampleCount, getBaggingFraction, getPosBaggingFraction, getNegBaggingFraction,
       getBaggingFreq, getBaggingSeed, getEarlyStoppingRound, getImprovementTolerance,
       getFeatureFraction, getMaxDepth, getMinSumHessianInLeaf, numTasks, getObjective, modelStr,
-      getIsUnbalance, getScalePosWeight, getVerbosity, categoricalIndexes, actualNumClasses, getBoostFromAverage,
+      getIsUnbalance, getScalePosWeight, getVerbosity, categoricalIndexes, getNumClasses, getBoostFromAverage,
       getBoostingType, getLambdaL1, getLambdaL2, getIsProvideTrainingMetric,
       getMetric, getMinGainToSplit, getMaxDeltaStep, getMaxBinByFeature, getMinDataInLeaf, getSlotNames, getDelegate)
   }

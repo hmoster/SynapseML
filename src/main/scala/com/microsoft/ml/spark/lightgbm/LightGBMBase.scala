@@ -11,6 +11,7 @@ import org.apache.spark.ml.{Estimator, Model}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Dataset, Encoders}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.language.existentials
@@ -206,7 +207,7 @@ trait LightGBMBase[TrainedModel <: Model[TrainedModel]] extends Estimator[Traine
     /* Run a parallel job via map partitions to initialize the native library and network,
      * translate the data to the LightGBM in-memory representation and train the models
      */
-    val encoder = Encoders.kryo[(LightGBMBooster, Array[Array[Double]])]
+    val encoder = Encoders.kryo[(LightGBMBooster, Array[ArrayBuffer[Double]])]
 
     val trainParams = getTrainParams(numTasks, getCategoricalIndexes(df), dataset)
     log.info(s"LightGBM parameters: ${trainParams.toString()}")
