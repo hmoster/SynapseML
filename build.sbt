@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "com.jcraft" % "jsch" % "0.1.54",
   "com.microsoft.cognitiveservices.speech" % "client-sdk" % "1.11.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.6",
-  "com.microsoft.ml.lightgbm" % "lightgbmlib" % "3.2.110",
+  "com.microsoft.ml.lightgbm" % "lightgbmlib" % "3.3.210",
   "com.github.vowpalwabbit" % "vw-jni" % "8.8.1",
   "com.linkedin.isolation-forest" %% "isolation-forest_2.4.3" % "0.3.2",
   "org.apache.spark" %% "spark-avro" % sparkVersion
